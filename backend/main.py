@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from db import init_db
 
 app = FastAPI()
+
+# Initialize database tables
+init_db()
 
 # Allow requests from React
 app.add_middleware(
