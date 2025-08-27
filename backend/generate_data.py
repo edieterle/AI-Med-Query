@@ -1,7 +1,9 @@
-from db import SessionLocal, init_db, Patient, Device, Reading, Outcome
+from db import SessionLocal, init_db, Patient, Device, Reading, Outcome, DATABASE_URL
 from faker import Faker
 from datetime import timedelta
 import random
+import pandas as pd
+from sqlalchemy import create_engine
 
 fake = Faker()
 
@@ -10,10 +12,9 @@ fake = Faker()
 # Devices: 1-3 per patient; device type affects outcome probabilities
 # Readings: 30-day readings correlated with risk score
 # Outcomes: complications, replacemnts, and readmissions depend on risk score and device type
-# Trends: heart rate increases slighlty over time for high-risk patients;
-#   battery decreases gradually
+# Trends: heart rate increases slighlty over time for high-risk patients; battery decreases gradually
 
-# 1. Initialize DB
+# 1. Initialize database
 init_db()
 db = SessionLocal()
 
@@ -87,7 +88,7 @@ def generate_outcome(device_type, risk_score):
         "time_to_failure": time_to_failure
     }
 
-# 3. Populate Patients & Devices
+# 3. Populate database
 device_types = ["Pacemaker", "Defibrillator", "Neurostimulator"]
 manufacturers = ["Medtronic", "Boston Scientific", "Abbott"]
 
@@ -147,3 +148,20 @@ for _ in range(20):  # 20 patients
 db.commit()
 db.close()
 print("Populated database")
+
+# Export data to Excel
+
+# Create SQLAlchemy engine
+engine = create_engine(DATABASE_URL)
+
+def export_to_excel(output_file="exported_data.xlsx"):
+    tables = ["patients", "devices", "readings", "outcomes"]
+    with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
+        for table in tables:
+            # Read SQL table into DataFrame
+            df = pd.read_sql_table(table, con=engine)
+            # Write each DataFrame to a separate sheet
+            df.to_excel(writer, sheet_name=table, index=False)
+    print(f"Data exported to {output_file}")
+
+export_to_excel()
